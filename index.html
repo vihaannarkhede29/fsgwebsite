@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imposter Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .timer-pulse {
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen text-white">
+    <div id="app" class="container mx-auto px-4 py-8">
+        <!-- Home Screen -->
+        <div id="homeScreen" class="text-center fade-in">
+            <h1 class="text-6xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
+                Imposter Game
+            </h1>
+            <div class="max-w-md mx-auto bg-white/10 backdrop-blur-sm rounded-2xl p-8 shadow-2xl">
+                <label for="playerCount" class="block text-xl font-semibold mb-4">
+                    Number of Players
+                </label>
+                <input 
+                    type="number" 
+                    id="playerCount" 
+                    min="3" 
+                    max="20" 
+                    value="6"
+                    class="w-full px-4 py-3 text-lg text-center bg-white/20 border-2 border-white/30 rounded-xl focus:outline-none focus:border-yellow-400 transition-colors"
+                >
+                <button 
+                    id="startGameBtn"
+                    class="mt-6 w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xl font-bold py-4 px-8 rounded-xl hover:from-yellow-300 hover:to-orange-400 transform hover:scale-105 transition-all duration-200 shadow-lg"
+                >
+                    Start Game
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="hidden text-center fade-in">
+            <div class="max-w-2xl mx-auto">
+                <div class="mb-8">
+                    <h2 class="text-4xl font-bold mb-2">Player <span id="currentPlayerNumber">1</span></h2>
+                    <div class="text-xl text-gray-300">Question <span id="questionNumber">1</span> of <span id="totalQuestions">6</span></div>
+                </div>
+
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-8 mb-8 shadow-2xl">
+                    <div id="questionText" class="text-2xl font-semibold mb-6 leading-relaxed"></div>
+                </div>
+
+                <div class="flex gap-4 justify-center">
+                    <button 
+                        id="nextBtn"
+                        class="bg-gradient-to-r from-green-400 to-blue-500 text-white text-xl font-bold py-3 px-8 rounded-xl hover:from-green-300 hover:to-blue-400 transform hover:scale-105 transition-all duration-200 shadow-lg"
+                    >
+                        Next Player
+                    </button>
+                    <button 
+                        id="endGameBtn"
+                        class="bg-gradient-to-r from-red-400 to-pink-500 text-white text-xl font-bold py-3 px-8 rounded-xl hover:from-red-300 hover:to-pink-400 transform hover:scale-105 transition-all duration-200 shadow-lg"
+                    >
+                        End Game
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Next Person Screen -->
+        <div id="nextPersonScreen" class="hidden text-center fade-in">
+            <div class="max-w-2xl mx-auto">
+                <h2 class="text-5xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-500">
+                    Next Person Please Come
+                </h2>
+                
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-8 mb-8 shadow-2xl">
+                    <div class="text-2xl mb-6">Player <span id="nextPlayerNumber"></span> is up next!</div>
+                    <div class="text-lg text-gray-300">Click "Continue" when they're ready</div>
+                </div>
+
+                <button 
+                    id="continueBtn"
+                    class="bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xl font-bold py-4 px-8 rounded-xl hover:from-yellow-300 hover:to-orange-400 transform hover:scale-105 transition-all duration-200 shadow-lg"
+                >
+                    Continue
+                </button>
+            </div>
+        </div>
+
+        <!-- Reveal Question Screen -->
+        <div id="revealScreen" class="hidden text-center fade-in">
+            <div class="max-w-2xl mx-auto">
+                <h2 class="text-4xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
+                    Reveal Question
+                </h2>
+                
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-8 mb-8 shadow-2xl">
+                    <div class="text-xl mb-4 text-gray-300">The main question for discussion is:</div>
+                    <div id="revealQuestionText" class="text-2xl font-semibold mb-6 leading-relaxed"></div>
+                    <div id="revealTimer" class="text-4xl font-bold text-yellow-400 timer-pulse"></div>
+                </div>
+
+                <div class="text-lg text-gray-300">
+                    <p>Discuss the question and try to identify the imposter!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="hidden text-center fade-in">
+            <h2 class="text-5xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
+                Game Complete!
+            </h2>
+            <div class="max-w-md mx-auto bg-white/10 backdrop-blur-sm rounded-2xl p-8 shadow-2xl">
+                <p class="text-xl mb-6">The regular question was:</p>
+                <div id="finalQuestionText" class="text-2xl font-semibold mb-6 leading-relaxed"></div>
+                <button 
+                    id="playAgainBtn"
+                    class="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xl font-bold py-4 px-8 rounded-xl hover:from-yellow-300 hover:to-orange-400 transform hover:scale-105 transition-all duration-200 shadow-lg"
+                >
+                    Play Again
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let gameState = {
+            playerCount: 0,
+            currentPlayer: 0,
+            imposterIndex: 0,
+            currentMainQuestion: "",
+            currentImposterQuestion: "",
+            isRevealPhase: false
+        };
+
+        // Question arrays
+        const mainQuestions = [
+            "How many humans would it take to fight a gorilla?",
+            "How many pizzas would it take to fill a swimming pool?",
+            "How many basketballs can fit in an airplane?",
+            "How many chickens would it take to defeat a lion?",
+            "How many ping pong balls could fit in your bedroom?",
+            "How many elephants could stand on a football field before it breaks?",
+            "How many donuts would it take to circle the planet?",
+            "How many ants could carry a car?",
+            "How many marshmallows can you eat in 1 minute?",
+            "How long would it take to drink the entire ocean with a straw?",
+            "How many bananas can fit inside a car?",
+            "How many slices of bread to cover a soccer field?",
+            "How many Lego bricks to build a real house?",
+            "How many balloons to lift a human?",
+            "How many cups of water in a lake?",
+            "How many tennis balls to fill a classroom?",
+            "How many stars can you see on a clear night?",
+            "How many penguins could pull a sled?",
+            "How many giraffes would it take to reach the moon?",
+            "How many carrots are in a grocery store?",
+            "How many cats could fit on a couch?",
+            "How many watermelons to fill a bathtub?",
+            "How many jellybeans in a jar?",
+            "How many books could stack to the ceiling?",
+            "How many cars could fit in a football field?",
+            "How many pancakes to cover a table?",
+            "How many socks to reach the moon?",
+            "How many pieces of candy in a bag?",
+            "How many shoes would fill a car?",
+            "How many pencils to make a bridge?",
+            "How many ice cubes to fill a pool?",
+            "How many balls in a stadium?",
+            "How many birds in a tree?",
+            "How many chairs in a theater?",
+            "How many fish in a pond?",
+            "How many marbles to fill a jar?",
+            "How many candies to fill a swimming pool?",
+            "How many balloons in a party store?",
+            "How many pencils in a classroom?",
+            "How many cupcakes to fill a bakery tray?"
+        ];
+
+        const imposterQuestions = [
+            "How many pencils fit in a backpack?",
+            "How many planets are in the solar system?",
+            "How many times do you brush your teeth daily?",
+            "How many shoes do you own?",
+            "How many times have you been on a roller coaster?",
+            "How many friends do you have on social media?",
+            "How many cars are on your street right now?",
+            "How many books can fit on your bookshelf?",
+            "How many hours of sleep do you get per night?",
+            "How many socks do you own?",
+            "How many chairs are in your house?",
+            "How many T-shirts do you own?",
+            "How many computers are in your school?",
+            "How many windows are in your house?",
+            "How many lamps are in your house?",
+            "How many hats do you own?",
+            "How many belts do you have?",
+            "How many watches do you own?",
+            "How many chairs are in your school library?",
+            "How many pencils are on your desk?",
+            "How many windows are in your classroom?",
+            "How many bags of chips do you have at home?",
+            "How many mugs are in your kitchen?",
+            "How many erasers do you own?",
+            "How many staplers are in your office?",
+            "How many spoons are in your kitchen?",
+            "How many chairs are in your classroom?",
+            "How many clocks are in your house?",
+            "How many doors are in your school?",
+            "How many keyboards are in your classroom?",
+            "How many windows are in your home?",
+            "How many backpacks are in your class?",
+            "How many hats do your classmates have?",
+            "How many pencils are on the teacher's desk?",
+            "How many books are in your backpack?",
+            "How many water bottles are in your kitchen?",
+            "How many chairs are in your living room?",
+            "How many socks are on your floor?",
+            "How many books are on your teacher's shelf?",
+            "How many mugs are on your desk?"
+        ];
+
+        // DOM elements
+        const homeScreen = document.getElementById('homeScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const nextPersonScreen = document.getElementById('nextPersonScreen');
+        const revealScreen = document.getElementById('revealScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const playerCountInput = document.getElementById('playerCount');
+        const startGameBtn = document.getElementById('startGameBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const continueBtn = document.getElementById('continueBtn');
+        const endGameBtn = document.getElementById('endGameBtn');
+        const playAgainBtn = document.getElementById('playAgainBtn');
+        const currentPlayerNumber = document.getElementById('currentPlayerNumber');
+        const questionNumber = document.getElementById('questionNumber');
+        const totalQuestions = document.getElementById('totalQuestions');
+        const questionText = document.getElementById('questionText');
+        const nextPlayerNumber = document.getElementById('nextPlayerNumber');
+        const revealQuestionText = document.getElementById('revealQuestionText');
+        const revealTimer = document.getElementById('revealTimer');
+        const finalQuestionText = document.getElementById('finalQuestionText');
+
+        // Event listeners
+        startGameBtn.addEventListener('click', startGame);
+        nextBtn.addEventListener('click', showNextPerson);
+        continueBtn.addEventListener('click', continueToNextPlayer);
+        endGameBtn.addEventListener('click', endGame);
+        playAgainBtn.addEventListener('click', resetGame);
+
+        // Game functions
+        function startGame() {
+            const count = parseInt(playerCountInput.value);
+            if (count < 3 || count > 20) {
+                alert('Please enter a number between 3 and 20 players.');
+                return;
+            }
+
+            gameState.playerCount = count;
+            gameState.currentPlayer = 0;
+            gameState.imposterIndex = Math.floor(Math.random() * count);
+            
+            // Select random questions for this round
+            gameState.currentMainQuestion = mainQuestions[Math.floor(Math.random() * mainQuestions.length)];
+            gameState.currentImposterQuestion = imposterQuestions[Math.floor(Math.random() * imposterQuestions.length)];
+            
+            homeScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            
+            showPlayerQuestion();
+        }
+
+        function showPlayerQuestion() {
+            const isImposter = gameState.currentPlayer === gameState.imposterIndex;
+            
+            currentPlayerNumber.textContent = gameState.currentPlayer + 1;
+            questionNumber.textContent = gameState.currentPlayer + 1;
+            totalQuestions.textContent = gameState.playerCount;
+            
+            if (isImposter) {
+                questionText.innerHTML = gameState.currentImposterQuestion;
+            } else {
+                questionText.innerHTML = gameState.currentMainQuestion;
+            }
+        }
+
+        function showNextPerson() {
+            // Hide game screen and show next person screen
+            gameScreen.classList.add('hidden');
+            nextPersonScreen.classList.remove('hidden');
+            
+            // Show who's next
+            const nextPlayer = gameState.currentPlayer + 1;
+            if (nextPlayer < gameState.playerCount) {
+                nextPlayerNumber.textContent = nextPlayer + 1;
+            }
+        }
+
+        function continueToNextPlayer() {
+            // Hide next person screen
+            nextPersonScreen.classList.add('hidden');
+            
+            // Move to next player
+            gameState.currentPlayer++;
+            
+            if (gameState.currentPlayer >= gameState.playerCount) {
+                // Show reveal question phase
+                showRevealQuestion();
+            } else {
+                // Show next player's question
+                gameScreen.classList.remove('hidden');
+                showPlayerQuestion();
+            }
+        }
+
+
+
+        function showRevealQuestion() {
+            gameScreen.classList.add('hidden');
+            revealScreen.classList.remove('hidden');
+            
+            revealQuestionText.textContent = gameState.currentMainQuestion;
+            startRevealTimer();
+        }
+
+        function startRevealTimer() {
+            let timeLeft = 15;
+            revealTimer.textContent = timeLeft;
+            
+            const revealTimerInterval = setInterval(() => {
+                timeLeft--;
+                revealTimer.textContent = timeLeft;
+                
+                if (timeLeft <= 5) {
+                    revealTimer.classList.add('text-red-400');
+                }
+                
+                if (timeLeft <= 0) {
+                    clearInterval(revealTimerInterval);
+                    showGameOver();
+                }
+            }, 1000);
+        }
+
+        function showGameOver() {
+            revealScreen.classList.add('hidden');
+            gameOverScreen.classList.remove('hidden');
+            finalQuestionText.textContent = gameState.currentMainQuestion;
+        }
+
+        function endGame() {
+            if (gameState.timer) {
+                clearInterval(gameState.timer);
+            }
+            showGameOver();
+        }
+
+        function resetGame() {
+            gameState.currentPlayer = 0;
+            
+            gameOverScreen.classList.add('hidden');
+            homeScreen.classList.remove('hidden');
+            
+            // Hide all other screens
+            gameScreen.classList.add('hidden');
+            nextPersonScreen.classList.add('hidden');
+            revealScreen.classList.add('hidden');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add some visual flair
+            const title = document.querySelector('h1');
+            title.style.textShadow = '0 0 30px rgba(251, 191, 36, 0.5)';
+        });
+    </script>
+</body>
+</html>
+
